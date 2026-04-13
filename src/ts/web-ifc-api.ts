@@ -341,6 +341,8 @@ export function ms() {
 }
 
 export type LocateFileHandlerFn = (path: string, prefix: string) => string;
+const MT_INIT_TIMEOUT_MS = 10000;
+const loadWasmModule = (modulePath: string) => require(modulePath);
 
 export class IfcAPI {
   /** @ignore */
@@ -377,6 +379,7 @@ export class IfcAPI {
     customLocateFileHandler?: LocateFileHandlerFn,
     forceSingleThread: boolean = false
   ) {
+    let shouldRetrySingleThread = false;
     if (!WebIFCWasm) {
       if (
         typeof self !== "undefined" &&
@@ -385,10 +388,11 @@ export class IfcAPI {
       ) {
         try {
           WebIFCWasm = require("./web-ifc-mt");
+          shouldRetrySingleThread = true;
         } catch (ex) {
-          WebIFCWasm = require(__WASM_PATH__);
+          WebIFCWasm = loadWasmModule(__WASM_PATH__);
         }
-      } else WebIFCWasm = require(__WASM_PATH__);
+      } else WebIFCWasm = loadWasmModule(__WASM_PATH__);
     }
 
     if (WebIFCWasm && this.wasmModule == undefined) {
@@ -405,11 +409,43 @@ export class IfcAPI {
         );
       };
 
-      //@ts-ignore
-      this.wasmModule = await WebIFCWasm({
-        noInitialRun: true,
-        locateFile: customLocateFileHandler || locateFileHandler,
-      });
+      try {
+        // @ts-ignore
+        const modulePromise = WebIFCWasm({
+          noInitialRun: true,
+          locateFile: customLocateFileHandler || locateFileHandler,
+        });
+        if (shouldRetrySingleThread) {
+          this.wasmModule = await Promise.race([
+            modulePromise,
+            new Promise((_, reject) =>
+              setTimeout(
+                () =>
+                  reject(
+                    new Error(
+                      `MT WASM init timed out after ${MT_INIT_TIMEOUT_MS}ms`
+                    )
+                  ),
+                MT_INIT_TIMEOUT_MS
+              )
+            ),
+          ]);
+        } else {
+          this.wasmModule = await modulePromise;
+        }
+      } catch (error) {
+        if (!shouldRetrySingleThread) throw error;
+        Log.warn(
+          "MT WASM init failed, retrying with single-thread module.",
+          error
+        );
+        WebIFCWasm = loadWasmModule(__WASM_PATH__);
+        // @ts-ignore
+        this.wasmModule = await WebIFCWasm({
+          noInitialRun: true,
+          locateFile: customLocateFileHandler || locateFileHandler,
+        });
+      }
       this.SetLogLevel(LogLevel.LOG_LEVEL_ERROR);
     } else {
       Log.error(
