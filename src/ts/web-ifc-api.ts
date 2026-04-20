@@ -342,7 +342,6 @@ export function ms() {
 
 export type LocateFileHandlerFn = (path: string, prefix: string) => string;
 const MT_INIT_TIMEOUT_MS = 10000;
-const loadWasmModule = (modulePath: string) => require(modulePath);
 
 export class IfcAPI {
   /** @ignore */
@@ -390,9 +389,9 @@ export class IfcAPI {
           WebIFCWasm = require("./web-ifc-mt");
           shouldRetrySingleThread = true;
         } catch (ex) {
-          WebIFCWasm = loadWasmModule(__WASM_PATH__);
+          WebIFCWasm = require(__WASM_PATH__);
         }
-      } else WebIFCWasm = loadWasmModule(__WASM_PATH__);
+      } else WebIFCWasm = require(__WASM_PATH__);
     }
 
     if (WebIFCWasm && this.wasmModule == undefined) {
@@ -439,7 +438,7 @@ export class IfcAPI {
           "MT WASM init failed, retrying with single-thread module.",
           error
         );
-        WebIFCWasm = loadWasmModule(__WASM_PATH__);
+        WebIFCWasm = require(__WASM_PATH__);
         // @ts-ignore
         this.wasmModule = await WebIFCWasm({
           noInitialRun: true,
