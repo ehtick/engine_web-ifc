@@ -16,7 +16,7 @@
     "alwaysStrict": true,
     "rootDir":"./src/ts",
     "ignoreDeprecations": "6.0",
-    "types": ["node"],
+    "types": ["node","jest"],
     "module":"node16"
   },
   "files": [
