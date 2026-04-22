@@ -13,7 +13,9 @@
     "noUnusedParameters": true,                           
     "strictFunctionTypes": true,                 
     "strictPropertyInitialization": true,        
-    "alwaysStrict": true              
+    "alwaysStrict": true,
+    "rootDir":"./src/ts",
+    "ignoreDeprecations": "6.0"      
   },
   "files": [
     "src/ts/web-ifc-api.ts"
