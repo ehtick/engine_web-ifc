@@ -17,7 +17,8 @@
     "rootDir":"./src/ts",
     "ignoreDeprecations": "6.0",
     "types": ["node","jest"],
-    "module":"node16"
+    "module":"node16",
+    "isolatedModules": true
   },
   "files": [
     "src/ts/web-ifc-api.ts"
